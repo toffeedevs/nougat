@@ -5,7 +5,7 @@
       "use": "@vercel/python"
     }
   ],
-  "routes": [
+  "redirects": [
     {
       "src": "/(.*)",
       "dest": "main.py"
