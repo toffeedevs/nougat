@@ -106,3 +106,6 @@ async def mcqtext(to: TextObject):
     mcq = json.loads(completion_text)
     return {"questions": mcq}
 
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(request: Request, rest_of_path: str = ""):
+    return JSONResponse(status_code=204, content=None)
