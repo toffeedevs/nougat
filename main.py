@@ -105,3 +105,51 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.post("/nougat/fitb")
+async def mcqtext(to: TextObject):
+    context = to.text
+
+    instruction = f"""
+    Based on the following context, write as many fill-in-the-blank questions as possible in a structured JSON format. Ensure that the items that are
+    being asked to be filled in are pertinent proper nouns that are important in the context. Each question should have a "question" field and an "answer" field which is one of the choices. Each question must also be specific.
+    Additionally, you should add a "rationale" field that explains the answer to the question. 
+
+    TEXT:
+    {context}
+
+    Return only valid JSON with no explanations or additional text.
+    """
+
+    response = requests.post(
+        url="https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+            "Content-Type": "application/json"
+        },
+        data=json.dumps({
+            "model": "google/gemini-2.0-flash-lite-001",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": instruction
+                }
+            ],
+            "response_format": {"type": "json_object"}
+        })
+    )
+
+    response_json = response.json()
+    print(response_json)
+    completion_text = response_json["choices"][0]["message"]["content"]
+
+    mcq = json.loads(completion_text)
+    return {"questions": mcq}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
