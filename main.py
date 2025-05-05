@@ -159,7 +159,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+@app.post("/nougat/transcriptify")
 async def transcriptify(to: TextObject):
     # More robust way to extract video ID from URL
     import re
