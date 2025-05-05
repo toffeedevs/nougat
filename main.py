@@ -199,4 +199,5 @@ async def transcriptify(to: TextObject):
 
     response_json = response.json()
     refined_transcript = response_json["choices"][0]["message"]["content"]
+    print(refined_transcript)
     return {"transcript": refined_transcript}
