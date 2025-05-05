@@ -3,6 +3,7 @@ anyio==4.9.0
 certifi==2025.1.31
 charset-normalizer==3.4.1
 click==8.1.8
+defusedxml==0.7.1
 dnspython==2.7.0
 email_validator==2.2.0
 fastapi==0.115.12
@@ -37,3 +38,4 @@ uvicorn==0.34.1
 uvloop==0.21.0
 watchfiles==1.0.5
 websockets==15.0.1
+youtube-transcript-api==1.0.3
