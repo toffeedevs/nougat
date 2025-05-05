@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
 import json
@@ -10,6 +10,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 load_dotenv()
 
 app = FastAPI()
+
 
 @app.get("/")
 async def root():
@@ -99,6 +100,7 @@ async def mcqtext(to: TextObject):
     mcq = json.loads(completion_text)
     return {"questions": mcq}
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -106,6 +108,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.post("/nougat/fitb")
 async def mcqtext(to: TextObject):
@@ -147,6 +150,7 @@ async def mcqtext(to: TextObject):
     mcq = json.loads(completion_text)
     return {"questions": mcq}
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -155,42 +159,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.post("/nougat/transcriptify")
 async def transcriptify(to: TextObject):
     id = to.text.split("=")[1]
     ytt_api = YouTubeTranscriptApi()
-    raw_transcript = ytt_api.fetch(id)
-    result = []
-    for snippet in raw_transcript:
-        result.append(snippet.text)
 
-    filtered_transcript = "".join(result)
-    instruction = f"""
-       Based on the following YouTube video transcript, clear up the text to be coherent while maintaining meaning
+    try:
+        raw_transcript = ytt_api.fetch(id)
+        result = []
+        for snippet in raw_transcript:
+            result.append(snippet.text)
 
-       TEXT:
-       {filtered_transcript}
+        filtered_transcript = "".join(result)
+        instruction = f"""
+           Based on the following YouTube video transcript, clear up the text to be coherent while maintaining meaning
+    
+           TEXT:
+           {filtered_transcript}
+    
+           Return only the text.
+           """
 
-       Return only the text.
-       """
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                "Content-Type": "application/json"
+            },
+            data=json.dumps({
+                "model": "google/gemini-2.0-flash-lite-001",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": instruction
+                    }
+                ],
+            })
+        )
 
-    response = requests.post(
-        url="https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
-            "Content-Type": "application/json"
-        },
-        data=json.dumps({
-            "model": "google/gemini-2.0-flash-lite-001",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": instruction
-                }
-            ],
-        })
-    )
-
-    response_json = response.json()
-    refined_transcript = response_json["choices"][0]["message"]["content"]
-    return {"transcript":refined_transcript}
+        response_json = response.json()
+        refined_transcript = response_json["choices"][0]["message"]["content"]
+        return {"transcript": refined_transcript}
+    except:
+        raise HTTPException(status_code="404", detail="Transcript not found.")
