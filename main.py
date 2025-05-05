@@ -1,9 +1,10 @@
-import os
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import requests
 import json
+import os
+
+import requests
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.proxies import WebshareProxyConfig
@@ -204,3 +205,47 @@ async def transcriptify(to: TextObject):
     response_json = response.json()
     refined_transcript = response_json["choices"][0]["message"]["content"]
     return {"transcript": refined_transcript}
+
+
+@app.post("/nougat/cards")
+async def cards(to: TextObject):
+    context = to.text
+
+    instruction = f"""
+    Based on the following context, write as many flashcard relationships as possible in a structured JSON format. Ensure that 
+    each term chosen as the "front" of a flashcard is meaningful in the context of the text. For each flashcard, the "back" should be an object containing:
+    - "definition": a concise explanation of the term,
+    - "fill in the blank": information from the text VERBATIM where the key term needs to be substituted in. Have short excerpts, and substitute the term with a "___".
+    
+    DO NOT ADD ANY ADDITIONAL INFORMATION NOT PRESENTED IN THE TEXT.
+    
+    Return the result as a JSON array of objects, where each object has the keys "front" and "back". Do not include any extra text outside of the JSON structure.
+    
+    Context:
+    {context}
+
+    """
+
+    response = requests.post(
+        url="https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+            "Content-Type": "application/json"
+        },
+        data=json.dumps({
+            "model": "google/gemini-2.0-flash-lite-001",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": instruction
+                }
+            ],
+            "response_format": {"type": "json_object"}
+        })
+    )
+
+    response_json = response.json()
+    completion_text = response_json["choices"][0]["message"]["content"]
+
+    cards = json.loads(completion_text)
+    return {"questions": cards}
