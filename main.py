@@ -5,7 +5,7 @@ import requests
 import json
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, VideoUnavailable, NoTranscriptFound
 
 load_dotenv()
 
@@ -160,25 +160,36 @@ app.add_middleware(
 )
 
 
-@app.post("/nougat/transcriptify")
 async def transcriptify(to: TextObject):
-    id = to.text.split("=")[1]
-    ytt_api = YouTubeTranscriptApi()
+    # More robust way to extract video ID from URL
+    import re
+    match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11})", to.text)
+    if not match:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+    video_id = match.group(1)
 
-    raw_transcript = ytt_api.fetch(id)
-    result = []
-    for snippet in raw_transcript:
-        result.append(snippet.text)
+    try:
+        raw_transcript = YouTubeTranscriptApi.get_transcript(video_id)
+    except VideoUnavailable:
+        raise HTTPException(status_code=404, detail="Video is unavailable")
+    except TranscriptsDisabled:
+        raise HTTPException(status_code=403, detail="Transcripts are disabled for this video")
+    except NoTranscriptFound:
+        raise HTTPException(status_code=404, detail="No transcript found for this video")
+    except Exception as e:
+        # Catch-all for other issues like network problems on Vercel
+        raise HTTPException(status_code=500, detail=f"Transcript fetch error: {str(e)}")
 
-    filtered_transcript = "".join(result)
+    result = "".join(snippet["text"] for snippet in raw_transcript)
+
     instruction = f"""
        Based on the following YouTube video transcript, clear up the text to be coherent while maintaining meaning
 
        TEXT:
-       {filtered_transcript}
+       {result[:8000]}
 
        Return only the text.
-       """
+    """
 
     response = requests.post(
         url="https://openrouter.ai/api/v1/chat/completions",
@@ -193,11 +204,10 @@ async def transcriptify(to: TextObject):
                     "role": "user",
                     "content": instruction
                 }
-            ],
+            ]
         })
     )
 
     response_json = response.json()
     refined_transcript = response_json["choices"][0]["message"]["content"]
-    print(refined_transcript)
     return {"transcript": refined_transcript}
