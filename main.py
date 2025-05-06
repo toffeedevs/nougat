@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import requests
 from dotenv import load_dotenv
@@ -22,10 +23,12 @@ async def root():
 class TextObject(BaseModel):
     text: str
 
+
 class FeynmanObject(BaseModel):
     term: str
     text: str
     response: str
+
 
 @app.post("/nougat/tftext")
 async def tftext(to: TextObject):
@@ -254,6 +257,7 @@ async def cards(to: TextObject):
     cards = json.loads(completion_text)
     return {"questions": cards}
 
+
 @app.post("/nougat/keyterms")
 async def keyterms(to: TextObject):
     context = to.text
@@ -288,14 +292,11 @@ async def keyterms(to: TextObject):
 
     response_json = response.json()
     completion_text = response_json["choices"][0]["message"]["content"]
-    return {"terms":completion_text}
+    return {"terms": completion_text}
+
 
 @app.post("/nougat/feynman")
 async def feynman(fo: FeynmanObject):
-    import json
-    import os
-    import requests
-
     term = fo.term
     text = fo.text
     response = fo.response
@@ -332,24 +333,16 @@ async def feynman(fo: FeynmanObject):
         },
         data=json.dumps({
             "model": "google/gemini-2.0-flash-lite-001",
-            "messages": [
-                {"role": "user", "content": instruction}
-            ]
+            "messages": [{"role": "user", "content": instruction}]
         })
     )
 
-    try:
-        response_json = response.json()
-        completion_text = response_json["choices"][0]["message"]["content"]
-        result = json.loads(completion_text)  # parses the JSON string to a Python dict
-        return result
-    except Exception as e:
-        return {
-            "clarity": "-",
-            "accuracy": "-",
-            "completeness": "-",
-            "feedback": "There was an error analyzing your explanation."
-        }
 
+    raw_content = response.json()["choices"][0]["message"]["content"]
 
+    # Step 1: Remove ```json or ``` blocks if present
+    cleaned = re.sub(r"```(?:json)?", "", raw_content).replace("```", "").strip()
 
+    # Step 2: Parse the cleaned JSON string
+    result = json.loads(cleaned)
+    return result
