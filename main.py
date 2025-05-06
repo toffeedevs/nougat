@@ -22,6 +22,10 @@ async def root():
 class TextObject(BaseModel):
     text: str
 
+class FeynmanObject(BaseModel):
+    term: str
+    text: str
+    response: str
 
 @app.post("/nougat/tftext")
 async def tftext(to: TextObject):
@@ -249,3 +253,88 @@ async def cards(to: TextObject):
 
     cards = json.loads(completion_text)
     return {"questions": cards}
+
+@app.post("/nougat/keyterms")
+async def keyterms(to: TextObject):
+    context = to.text
+
+    instruction = f"""
+        Based on the following context, extract as many keywords relating to concepts discussed in the text as possible. These must be important proper nouns in 
+        the considering the provided context. 
+
+        TEXT:
+        {context}
+
+        Return only valid JSON with no explanations or additional text.
+        """
+
+    response = requests.post(
+        url="https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+            "Content-Type": "application/json"
+        },
+        data=json.dumps({
+            "model": "google/gemini-2.0-flash-lite-001",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": instruction
+                }
+            ],
+            "response_format": {"type": "json_object"}
+        })
+    )
+
+    response_json = response.json()
+    completion_text = response_json["choices"][0]["message"]["content"]
+    return {"terms":completion_text}
+
+@app.post("/nougat/feynman")
+async def feynman(fo: FeynmanObject):
+    term = fo.term
+    text = fo.text
+    response = fo.response
+
+    instruction = f"""
+        You are an expert in the Feynman technique for active recall.
+        Evaluate the quality of a user's explanation based on the provided term, source text, and their response.
+        Out of ten, provide a clarity score, accuracy score, and completeness score. Additionally, add a "feedback" section
+        that describes how the response could be improved WITH SPECIFICS FROM THE SOURCE. 
+
+        TERM:
+        {term}
+
+        TEXT:
+        {text}
+
+        RESPONSE:
+        {response}
+
+        Return your evaluation as **valid JSON only**, with no additional commentary or explanation.
+    """
+
+    response = requests.post(
+        url="https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+            "Content-Type": "application/json"
+        },
+        data=json.dumps({
+            "model": "google/gemini-2.0-flash-lite-001",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": instruction
+                }
+            ],
+            "response_format": {"type": "json_object"}
+        })
+    )
+
+    response_json = response.json()
+    completion_text = response_json["choices"][0]["message"]["content"]
+    return {"scores":completion_text}
+
+
+
