@@ -292,6 +292,10 @@ async def keyterms(to: TextObject):
 
 @app.post("/nougat/feynman")
 async def feynman(fo: FeynmanObject):
+    import json
+    import os
+    import requests
+
     term = fo.term
     text = fo.text
     response = fo.response
@@ -311,7 +315,13 @@ async def feynman(fo: FeynmanObject):
         RESPONSE:
         {response}
 
-        Return your evaluation as **valid JSON only**, with no additional commentary or explanation.
+        Return your evaluation as valid JSON only, like:
+        {{
+          "clarity": <score>,
+          "accuracy": <score>,
+          "completeness": <score>,
+          "feedback": "<specific critique>"
+        }}
     """
 
     response = requests.post(
@@ -323,18 +333,23 @@ async def feynman(fo: FeynmanObject):
         data=json.dumps({
             "model": "google/gemini-2.0-flash-lite-001",
             "messages": [
-                {
-                    "role": "user",
-                    "content": instruction
-                }
-            ],
-            "response_format": {"type": "json_object"}
+                {"role": "user", "content": instruction}
+            ]
         })
     )
 
-    response_json = response.json()
-    completion_text = response_json["choices"][0]["message"]["content"]
-    return {"scores":completion_text}
+    try:
+        response_json = response.json()
+        completion_text = response_json["choices"][0]["message"]["content"]
+        result = json.loads(completion_text)  # parses the JSON string to a Python dict
+        return result
+    except Exception as e:
+        return {
+            "clarity": "-",
+            "accuracy": "-",
+            "completeness": "-",
+            "feedback": "There was an error analyzing your explanation."
+        }
 
 
 
