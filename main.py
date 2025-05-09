@@ -1,9 +1,9 @@
 import json
 import os
 import re
-import requests
 from typing import List, Optional
 
+import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -26,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Pydantic models
 class QuestionRequest(BaseModel):
     source_document: str
@@ -33,13 +34,16 @@ class QuestionRequest(BaseModel):
     sample_questions: Optional[List[str]] = []
     difficulty: str  # "Easy" or "Hard"
 
+
 class TextObject(BaseModel):
     text: str
+
 
 class FeynmanObject(BaseModel):
     term: str
     text: str
     response: str
+
 
 # Helper to call OpenRouter API
 def call_openrouter(prompt):
@@ -58,9 +62,11 @@ def call_openrouter(prompt):
     response_json = response.json()
     return json.loads(response_json["choices"][0]["message"]["content"])
 
+
 @app.get("/")
 async def root():
     return {"message": "Nougat: Question Synthesis"}
+
 
 @app.post("/nougat/mcqtext")
 async def mcqtext(qr: QuestionRequest):
@@ -92,6 +98,7 @@ async def mcqtext(qr: QuestionRequest):
     result = call_openrouter(instruction)
     return {"questions": result}
 
+
 @app.post("/nougat/tftext")
 async def tftext(qr: QuestionRequest):
     instruction = f"""
@@ -122,6 +129,7 @@ async def tftext(qr: QuestionRequest):
     result = call_openrouter(instruction)
     return {"questions": result}
 
+
 @app.post("/nougat/fitb")
 async def fitb(qr: QuestionRequest):
     instruction = f"""
@@ -130,7 +138,7 @@ async def fitb(qr: QuestionRequest):
     - "source_document"
     - "question" (sentence with blank)
     - "answer" (correct word/phrase)
-    - "rationale" 
+    - "rationale" (must directly cite a certain line from the text in the format, enclosing the certain line in quotes")
     - "difficulty" ("Easy" or "Hard")
 
     Use key proper nouns or facts from the text.
@@ -150,6 +158,7 @@ async def fitb(qr: QuestionRequest):
     """
     result = call_openrouter(instruction)
     return {"questions": result}
+
 
 @app.post("/nougat/cards")
 async def cards(qr: QuestionRequest):
@@ -176,18 +185,24 @@ async def cards(qr: QuestionRequest):
     result = call_openrouter(instruction)
     return {"cards": result}
 
+
 @app.post("/nougat/keyterms")
 async def keyterms(to: TextObject):
     instruction = f"""
-    Extract key terms from the following text.
+            Based on the following context, create as as many Feynman technique questions from keywords relating to concepts discussed in the text as possible. These must be important proper nouns in 
+            the considering the provided context. 
 
-    MAIN TEXT:
-    {to.text}
+            Examples of questions include: "Explain how the electron proton chain works to a 5 year old."
 
-    Only return valid JSON.
-    """
+            TEXT:
+            {to.text}
+
+            Return only valid JSON with no explanations or additional text.
+            """
+
     result = call_openrouter(instruction)
     return {"terms": result}
+
 
 @app.post("/nougat/feynman")
 async def feynman(fo: FeynmanObject):
@@ -198,7 +213,7 @@ async def feynman(fo: FeynmanObject):
       "clarity": (score /10),
       "accuracy": (score /10),
       "completeness": (score /10),
-      "feedback": "specific improvement points"
+      "feedback": "specific improvement points" from the text. 
     }}
 
     TERM:
@@ -227,6 +242,7 @@ async def feynman(fo: FeynmanObject):
     cleaned = re.sub(r"```(?:json)?", "", raw_content).replace("```", "").strip()
     result = json.loads(cleaned)
     return result
+
 
 @app.post("/nougat/transcriptify")
 async def transcriptify(to: TextObject):
