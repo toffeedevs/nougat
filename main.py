@@ -71,14 +71,14 @@ async def root():
 @app.post("/nougat/mcqtext")
 async def mcqtext(qr: QuestionRequest):
     instruction = f"""
-    Using the details below, generate as many multiple-choice questions in JSON format as possible.
+    Using the details below, generate as many multiple-choice questions in JSON format as possible. The questions must be presented in the same order the source material was presented. 
     Each should include:
     - "source_document"
     - "area_of_focus"
     - "question"
     - "choices" (list of 4)
     - "answer" (one of the choices)
-    - "rationale" (must directly cite a certain line from the text in the format, enclosing the certain line in quotes")
+    - "rationale" (must directly QUOTE a certain line from the text in the format, enclosing the certain line in quotes")
     - "difficulty" ("Easy", "Medium", or "Hard")
 
     Only return valid JSON.
@@ -102,13 +102,13 @@ async def mcqtext(qr: QuestionRequest):
 @app.post("/nougat/tftext")
 async def tftext(qr: QuestionRequest):
     instruction = f"""
-    Using the details below, generate true/false questions in JSON format.
+    Using the details below, generate true/false questions in JSON format. The questions must be presented in the same order the source material was presented. 
     Each should include:
     - "source_document"
     - "area_of_focus"
     - "question"
     - "answer" (true or false)
-    - "rationale" (must directly cite a certain line from the text in the format, enclosing the certain line in quotes")
+    - "rationale" (must directly QUOTE a certain line from the text in the format, enclosing the certain line in quotes")
     - "difficulty" ("Easy" or "Hard")
 
     Only return valid JSON.
