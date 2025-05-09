@@ -113,7 +113,7 @@ async def tftext(qr: QuestionRequest):
     - "rationale" (must directly QUOTE a certain line from the text in the format")
     Examples of rationales include: 
     {{"The source text stated that "...""}}
-    - "difficulty" ("Easy" or "Hard")
+    - "difficulty" ("Easy", "Medium", or "Hard")
 
     Only return valid JSON.
 
