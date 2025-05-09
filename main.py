@@ -287,6 +287,7 @@ async def transcriptify(to: TextObject):
 class AnkiUrlRequest(BaseModel):
     url: str
 
+# File upload
 @app.post("/nougat/import-anki")
 async def import_anki_from_url(req: AnkiUrlRequest):
     # Download the .apkg file from the provided URL
