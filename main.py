@@ -284,23 +284,32 @@ async def transcriptify(to: TextObject):
     return {"transcript": refined_text}
 
 
+class AnkiUrlRequest(BaseModel):
+    url: str
+
 @app.post("/nougat/import-anki")
-async def import_anki(file: UploadFile = File(...)):
-    # Save uploaded file to temp
+async def import_anki_from_url(req: AnkiUrlRequest):
+    # Download the .apkg file from the provided URL
+    response = requests.get(req.url)
+    if response.status_code != 200:
+        raise HTTPException(status_code=400, detail="Failed to download file from URL")
+
+    # Save to temp file
     temp_path = tempfile.mktemp(suffix=".apkg")
     with open(temp_path, "wb") as f:
-        f.write(await file.read())
+        f.write(response.content)
 
     result = []
     try:
         reader = ApkgReader(temp_path)
         for note in reader.notes:
-            print(note['data']['record']["Front"])
+            record = note['data']['record']
+            front = record.get('Front', '')
+            back = record.get('Back', '')
             result.append({
-                "front": note['data']['record']['Front'],
-                "back": note['data']['record']["Back"]
+                "front": front,
+                "back": back
             })
-        print(result)
         return {"cards": result}
 
     except Exception as e:
