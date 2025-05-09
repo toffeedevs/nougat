@@ -1,11 +1,14 @@
 import json
 import os
 import re
+import tempfile
+from http.client import HTTPException
 from typing import List, Optional
 
 import requests
+from anki_export import ApkgReader
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -279,3 +282,26 @@ async def transcriptify(to: TextObject):
     )
     refined_text = response.json()["choices"][0]["message"]["content"]
     return {"transcript": refined_text}
+
+
+@app.post("/nougat/import-anki")
+async def import_anki(file: UploadFile = File(...)):
+    # Save uploaded file to temp
+    temp_path = tempfile.mktemp(suffix=".apkg")
+    with open(temp_path, "wb") as f:
+        f.write(await file.read())
+
+    result = []
+    try:
+        reader = ApkgReader(temp_path)
+        for note in reader.notes:
+            print(note['data']['record']["Front"])
+            result.append({
+                "front": note['data']['record']['Front'],
+                "back": note['data']['record']["Back"]
+            })
+        print(result)
+        return {"cards": result}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process .apkg: {str(e)}")
