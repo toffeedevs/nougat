@@ -207,8 +207,7 @@ async def keyterms(to: TextObject):
 @app.post("/nougat/feynman")
 async def feynman(fo: FeynmanObject):
     instruction = f"""
-    Evaluate the user's explanation using the Feynman technique. Pretend you're a helpful professor and provide constructive criticism without being overly formal. Give a sample response and be helpful.
-    Return:
+    Evaluate the user's explanation using the Feynman technique. Pretend you're a tutor and provide constructive criticism and a sample response.
     {{
       "clarity": (score /10),
       "accuracy": (score /10),
