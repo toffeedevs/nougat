@@ -299,17 +299,14 @@ async def import_anki_from_url(req: AnkiUrlRequest):
         f.write(response.content)
 
     result = []
-    try:
-        reader = ApkgReader(temp_path)
-        for note in reader.notes:
-            record = note['data']['record']
-            front = record.get('Front', '')
-            back = record.get('Back', '')
-            result.append({
-                "front": front,
-                "back": back
-            })
-        return {"cards": result}
+    reader = ApkgReader(temp_path)
+    for note in reader.notes:
+        record = note['data']['record']
+        front = record.get('Front', '')
+        back = record.get('Back', '')
+        result.append({
+            "front": front,
+            "back": back
+        })
+    return {"cards": result}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process .apkg: {str(e)}")
