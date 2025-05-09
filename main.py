@@ -292,8 +292,6 @@ class AnkiUrlRequest(BaseModel):
 async def import_anki_from_url(req: AnkiUrlRequest):
     # Download the .apkg file from the provided URL
     response = requests.get(req.url)
-    if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to download file from URL")
 
     # Save to temp file
     temp_path = tempfile.mktemp(suffix=".apkg")
