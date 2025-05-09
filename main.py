@@ -78,7 +78,9 @@ async def mcqtext(qr: QuestionRequest):
     - "question"
     - "choices" (list of 4)
     - "answer" (one of the choices)
-    - "rationale" (must directly QUOTE a certain line from the text in the format, enclosing the certain line in quotes")
+    - "rationale" (must directly QUOTE a certain line from the text in the format")
+    Examples of rationales include: 
+    {{"The source text stated that "...""}}
     - "difficulty" ("Easy", "Medium", or "Hard")
 
     Only return valid JSON.
@@ -108,7 +110,9 @@ async def tftext(qr: QuestionRequest):
     - "area_of_focus"
     - "question"
     - "answer" (true or false)
-    - "rationale" (must directly QUOTE a certain line from the text in the format, enclosing the certain line in quotes")
+    - "rationale" (must directly QUOTE a certain line from the text in the format")
+    Examples of rationales include: 
+    {{"The source text stated that "...""}}
     - "difficulty" ("Easy" or "Hard")
 
     Only return valid JSON.
