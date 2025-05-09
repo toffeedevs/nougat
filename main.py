@@ -179,7 +179,7 @@ async def cards(qr: QuestionRequest):
 @app.post("/nougat/keyterms")
 async def keyterms(to: TextObject):
     instruction = f"""
-    Extract key terms and important proper nouns from the following text.
+    Extract key terms from the following text.
 
     MAIN TEXT:
     {to.text}
