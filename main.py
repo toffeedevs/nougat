@@ -339,7 +339,19 @@ async def chatbot(c: ChatBotRequest):
                 
                 Only return the response.
         """
-        result = call_openrouter(instruction)
-        return {"result":result}
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                "Content-Type": "application/json"
+            },
+            data=json.dumps({
+                "model": "google/gemini-2.0-flash-lite-001",
+                "messages": [{"role": "user", "content": instruction}]
+            })
+        )
+        response.raise_for_status()
+        raw_content = response.json()["choices"][0]["message"]["content"]
+        return {"result":raw_content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chatbot functionality failed")
