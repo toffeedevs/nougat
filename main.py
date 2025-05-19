@@ -36,6 +36,10 @@ class QuestionRequest(BaseModel):
     sample_questions: Optional[List[str]] = []
     difficulty: str
 
+class ChatBotRequest(BaseModel):
+    text: str
+    question: str
+
 class TextObject(BaseModel):
     text: str
 
@@ -319,3 +323,23 @@ async def import_anki_from_url(req: AnkiUrlRequest):
         return {"cards": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Anki import error: {str(e)}")
+
+@app.post("/nougat/chatbot")
+async def chatbot(c: ChatBotRequest):
+    try:
+        instruction = f"""
+                You are a domain expert on the following context parsed into you. Provide an informative answer to the user's question/request/comment, and teach them the material.
+                Provide full paragraphs worth of response with detail, and if the user asks you for specific evidence from the text, provide a citation by giving the exact quoted text. 
+                
+                CONTEXT:
+                {c.text}
+                
+                QUESTION:
+                {c.question}
+                
+                Only return the response.
+        """
+        result = call_openrouter(instruction)
+        return {"result":result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chatbot functionality failed")
