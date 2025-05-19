@@ -330,6 +330,7 @@ async def chatbot(c: ChatBotRequest):
         instruction = f"""
                 You are a domain expert on the following context parsed into you. Provide an informative answer to the user's question/request/comment, and teach them the material.
                 Provide full paragraphs worth of response with detail, and if the user asks you for specific evidence from the text, provide a citation by giving the exact quoted text. 
+                Do not sound mechanical, and don't indicate the idea of a "context" to the user. Say text. You are helpful and casual. 
                 
                 CONTEXT:
                 {c.text}
