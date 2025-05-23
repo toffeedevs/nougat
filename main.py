@@ -408,7 +408,7 @@ async def summarize(t: TextObject):
                 "Content-Type": "application/json"
             },
             data=json.dumps({
-                "model": "google/gemini-2.0-flash-lite-001",
+                "model": "openai/gpt-4o",
                 "messages": [{"role": "user", "content": instruction}]
             })
         )
