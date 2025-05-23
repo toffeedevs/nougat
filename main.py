@@ -8,7 +8,7 @@ from typing import List, Optional
 import requests
 from anki_export import ApkgReader
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -29,6 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Pydantic models
 class QuestionRequest(BaseModel):
     source_document: str
@@ -36,20 +37,25 @@ class QuestionRequest(BaseModel):
     sample_questions: Optional[List[str]] = []
     difficulty: str
 
+
 class ChatBotRequest(BaseModel):
     text: str
     question: str
 
+
 class TextObject(BaseModel):
     text: str
+
 
 class FeynmanObject(BaseModel):
     term: str
     text: str
     response: str
 
+
 class AnkiUrlRequest(BaseModel):
     url: str
+
 
 # Helper to call OpenRouter API
 def call_openrouter(prompt):
@@ -72,9 +78,11 @@ def call_openrouter(prompt):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OpenRouter API error: {str(e)}")
 
+
 @app.get("/")
 async def root():
     return {"message": "Nougat: Question Synthesis"}
+
 
 @app.post("/nougat/mcqtext")
 async def mcqtext(qr: QuestionRequest):
@@ -111,6 +119,7 @@ async def mcqtext(qr: QuestionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MCQ generation error: {str(e)}")
 
+
 @app.post("/nougat/tftext")
 async def tftext(qr: QuestionRequest):
     try:
@@ -146,6 +155,7 @@ async def tftext(qr: QuestionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"True/False generation error: {str(e)}")
 
+
 @app.post("/nougat/fitb")
 async def fitb(qr: QuestionRequest):
     try:
@@ -178,6 +188,7 @@ async def fitb(qr: QuestionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Fill-in-the-blank generation error: {str(e)}")
 
+
 @app.post("/nougat/cards")
 async def cards(qr: QuestionRequest):
     try:
@@ -206,6 +217,7 @@ async def cards(qr: QuestionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Card generation error: {str(e)}")
 
+
 @app.post("/nougat/keyterms")
 async def keyterms(to: TextObject):
     try:
@@ -224,6 +236,7 @@ async def keyterms(to: TextObject):
         return {"terms": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Keyterm generation error: {str(e)}")
+
 
 @app.post("/nougat/feynman")
 async def feynman(fo: FeynmanObject):
@@ -267,6 +280,7 @@ async def feynman(fo: FeynmanObject):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Feynman evaluation error: {str(e)}")
 
+
 @app.post("/nougat/transcriptify")
 async def transcriptify(to: TextObject):
     try:
@@ -304,6 +318,7 @@ async def transcriptify(to: TextObject):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcriptify error: {str(e)}")
 
+
 @app.post("/nougat/import-anki")
 async def import_anki_from_url(req: AnkiUrlRequest):
     try:
@@ -324,21 +339,67 @@ async def import_anki_from_url(req: AnkiUrlRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Anki import error: {str(e)}")
 
+
 @app.post("/nougat/chatbot")
 async def chatbot(c: ChatBotRequest):
     try:
         instruction = f"""
-                You are a domain expert on the following context parsed into you. Provide an informative answer to the user's question/request/comment, and teach them the material.
-                Provide full paragraphs worth of response with detail, and if the user asks you for specific evidence from the text, provide a citation by giving the exact quoted text. 
-                Do not sound mechanical, and don't indicate the idea of a "context" to the user. Say text. You are helpful and casual. 
-                
-                CONTEXT:
-                {c.text}
-                
-                QUESTION:
-                {c.question}
-                
-                Only return the response.
+        You are an educational assistant and domain expert. Your role is to help the user deeply understand the material presented in the text below. Respond to the user's question in a way that is informative, clear, and engaging—like a knowledgeable teacher guiding a curious student.
+
+        Your tone should be warm, approachable, and encouraging. Avoid sounding robotic or overly formal. Instead, focus on making the information accessible and memorable. Where helpful, explain background concepts, walk through reasoning step-by-step, and use real-world analogies or examples.
+
+        When crafting your response:
+        - Provide detailed, paragraph-level explanations.
+        - Teach the underlying ideas clearly, not just the surface-level answer.
+        - If the user asks for evidence or support, quote directly from the text using exact wording.
+        - Do **not** refer to the source material as "context"—simply call it "the text."
+        - Stay focused and helpful; avoid unnecessary tangents.
+
+        TEXT:
+        {c.text}
+
+        QUESTION:
+        {c.question}
+
+        Only return the response.
+        """
+
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                "Content-Type": "application/json"
+            },
+            data=json.dumps({
+                "model": "google/gemini-2.0-flash-lite-001",
+                "messages": [{"role": "user", "content": instruction}]
+            })
+        )
+        response.raise_for_status()
+        raw_content = response.json()["choices"][0]["message"]["content"]
+        return {"result": raw_content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chatbot functionality failed")
+
+@app.post("/chatbot/summarize")
+async def summarize(t: TextObject):
+    try:
+        instruction = summary_prompt = f"""
+        You are a summarization assistant helping distill a multi-turn chat conversation into a clear, concise summary that can be used as context for future chatbot interactions.
+        
+        Summarize the chat history below with the following goals:
+        - **Preserve all key points** shared by the user, including their questions, goals, and challenges.
+        - Highlight any important technical details, domain-specific content, or user preferences.
+        - Maintain any assumptions, constraints, or stylistic instructions expressed by the user.
+        - Structure the summary so it can effectively inform a chatbot’s behavior and understanding in future conversations.
+        - Do not repeat the dialogue verbatim. Instead, paraphrase meaningfully and organize the information logically.
+        - Write in the third person using full, clear sentences.
+        - Be concise, but do **not omit important insights or instructions**.
+        
+        CHAT HISTORY:
+        {t.text}
+        
+        Return only the cleaned summary.
         """
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
@@ -353,6 +414,6 @@ async def chatbot(c: ChatBotRequest):
         )
         response.raise_for_status()
         raw_content = response.json()["choices"][0]["message"]["content"]
-        return {"result":raw_content}
+        return {"result": raw_content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chatbot functionality failed")
