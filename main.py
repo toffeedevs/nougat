@@ -199,6 +199,7 @@ async def cards(qr: QuestionRequest):
         - \"back\": {{
             \"definition\": (short explanation),
             \"fill_in_blank\": (sentence with blank)
+            \"citation\": (excerpt from the text where the flashcard was made)
           }}
 
         Do not invent any content not in the text.
