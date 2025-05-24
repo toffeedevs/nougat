@@ -39,6 +39,7 @@ class QuestionRequest(BaseModel):
 
 
 class ChatBotRequest(BaseModel):
+    summary: str
     text: str
     question: str
 
@@ -354,7 +355,12 @@ async def chatbot(c: ChatBotRequest):
         - If the user asks for evidence or support, quote directly from the text using exact wording.
         - Do **not** refer to the source material as "context"—simply call it "the text."
         - Stay focused and helpful; avoid unnecessary tangents.
+        
+        Additionally, use the summary provided to you for additional context and to formulate your answers if the user refers to something previously in the conversation.
 
+        SUMMARY:
+        {c.summary}
+        
         TEXT:
         {c.text}
 
