@@ -32,6 +32,7 @@ app.add_middleware(
 
 # Pydantic models
 class QuestionRequest(BaseModel):
+    number_of_questions: int
     source_document: str
     focus_areas: List[str]
     sample_questions: Optional[List[str]] = []
@@ -89,7 +90,7 @@ async def root():
 async def mcqtext(qr: QuestionRequest):
     try:
         instruction = f"""
-        Using the details below, generate as many multiple-choice questions in JSON format as possible. The questions must be presented in the same order the source material was presented. 
+        Using the details below, generate STRICTLY {qr.number_of_questions} many multiple-choice questions in JSON format as possible. The questions must be presented in the same order the source material was presented. 
         Each should include:
         - \"source_document\"
         - \"area_of_focus\"
@@ -125,7 +126,7 @@ async def mcqtext(qr: QuestionRequest):
 async def tftext(qr: QuestionRequest):
     try:
         instruction = f"""
-        Using the details below, generate true/false questions in JSON format. The questions must be presented in the same order the source material was presented. 
+        Using the details below, generate STRICTLY {qr.number_of_questions} true/false questions in JSON format. The questions must be presented in the same order the source material was presented. 
         Each should include:
         - \"source_document\"
         - \"area_of_focus\"
@@ -161,7 +162,7 @@ async def tftext(qr: QuestionRequest):
 async def fitb(qr: QuestionRequest):
     try:
         instruction = f"""
-        Using the details below, generate fill-in-the-blank questions in JSON format.
+        Using the details below, generate STRICTLY {qr.number_of_questions} fill-in-the-blank questions in JSON format.
         Each should include:
         - \"source_document\"
         - \"question\" (sentence with blank)
