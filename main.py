@@ -399,7 +399,7 @@ async def summarize(t: TextObject):
         - Write in the third person using full, clear sentences.
         - Be concise, but do **not omit important insights or instructions**.
         - Maintain accounts of what entity said what (chatbot vs. user)
-        - Also include what the bot should do given the summary
+        - Also include what the bot should do given the summary, keep being proactive and moving the bot along.
         
         CHAT HISTORY:
         {t.text}
