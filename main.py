@@ -389,7 +389,6 @@ async def summarize(t: TextObject):
     try:
         instruction = summary_prompt = f"""
         You are a summarization assistant helping distill a multi-turn chat conversation into a clear, concise summary that can be used as context for future chatbot interactions.
-        Focus on what the chatbot should do next based on the content it received given that it is an educational tutor. 
         
         Summarize the chat history below with the following goals:
         - **Preserve all key points** shared by the user, including their questions, goals, and challenges.
@@ -400,6 +399,7 @@ async def summarize(t: TextObject):
         - Write in the third person using full, clear sentences.
         - Be concise, but do **not omit important insights or instructions**.
         - Maintain accounts of what entity said what (chatbot vs. user)
+        - Also include what the bot should do given the summary
         
         CHAT HISTORY:
         {t.text}
