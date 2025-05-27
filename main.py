@@ -355,6 +355,8 @@ async def chatbot(c: ChatBotRequest):
         
         Keep your conversation fluid, and be helpful to the user. Correct the user IMMEDIATELY and teach them the right thing.
         
+        Keep track of what question you are on, and be correct when the user asks you for the next one. 
+        
         SUMMARY:
         {c.summary}
         
