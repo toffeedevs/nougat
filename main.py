@@ -349,8 +349,11 @@ async def chatbot(c: ChatBotRequest):
         instruction = f"""
         You are a tutor who is an expert in whatever domain the text and question provided below is. Your job is
         to closely follow the user's queries and address them specifically. Provide responses without overly flowery 
-        language and use the summary below to help be specific in the responses. Never send a filler message like "Let's begin!"
-        Always include content. If ever asked to provide questions, provide them INDIVIDUALLY unless specified otherwise. 
+        language and use the summary below to help be specific in the responses.  
+        
+        If ever asked to provide questions, provide them INDIVIDUALLY unless specified otherwise. 
+        
+        Keep your conversation fluid, and be helpful to the user. 
         
         SUMMARY:
         {c.summary}
